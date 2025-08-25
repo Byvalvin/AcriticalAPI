@@ -1,5 +1,12 @@
-{
-  "reviews": [
+
+export interface Review{
+  id:string,
+  author:string,
+  text:string,
+  rating:number
+}
+
+const allReviews : Review[]= [
     {
       "id": "r1",
       "author": "u1",
@@ -19,4 +26,5 @@
       "rating": 5.0
     }
   ]
-}
+
+export default allReviews;

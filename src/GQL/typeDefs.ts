@@ -48,8 +48,11 @@ export const typeDefs = gql`
     users: [User!]
     user(id: ID!): User
 
-    books: [Book!]
+    books(author: String, title: String): [Book!]
     book(title: String!): Book
+
+    reviews: [Review!]
+    review(id:ID!): Review
   }
 
 

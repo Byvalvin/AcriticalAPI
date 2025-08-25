@@ -73,7 +73,20 @@ const allBooks: Book[] = [
     date: "1606-01-01",
     adapted: true,
     reviews: []
-  }
+  },
+  {
+  id: "b6",
+  author: "William Shakespeare",
+  title: "Romeo & Juliet",
+  aliases: ["Romeo and Juliet"],
+  genre: Genre.Tragedy,
+  genres: [Genre.Drama, Genre.Classic, Genre.Romance],
+  summary: "Two young lovers from feuding families pursue their passion with tragic consequences.",
+  date: "1597-01-01",
+  adapted: true,
+  reviews: []
+}
+
 ];
 
 export default allBooks;
