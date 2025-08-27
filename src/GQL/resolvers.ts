@@ -4,14 +4,35 @@ import allReviews from '../DB/reviews';
 const { allUsers } = require('../DB/users');
 import allLists from '../DB/lists';
 import Genre = require('../enums/Genre');
-import type Book = require('../DB/books');
-import type User = require('../DB/users');
+import Book = require('../DB/books');
+import User = require('../DB/users');
 import type List = require('../DB/lists');
 import type Review = require('../DB/reviews');
 
 
 const normalize = (str: string): string =>
   str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+const abouts: string[] = [
+  "A traveller from an antique land", // Ozymandias
+  "Call me Ishmael", // Moby Dick
+  "A soul with sorrow", // The Raven
+  "Mama died today", // The Stranger
+  "A player who struts and frets, until he is heard no more", // Macbeth
+  "I am invisible, understand, simply because people refuse to see me", // Invisible Man
+  "All this happened, more or less", // Slaughterhouse-Five
+  "I took the one less traveled by", // The Road Not Taken
+  "So it goes", // Slaughterhouse-Five
+  "It was a bright cold day in April, and the clocks were striking thirteen", // 1984
+  "We are all fools in love", // Pride and Prejudice
+  "I am no bird; and no net ensnares me", // Jane Eyre
+  "Time is a flat circle", // Nietzsche via True Detective
+  "The past is never dead. It’s not even past", // Faulkner
+  "I contain multitudes", // Walt Whitman
+];
+const randomIndex = (N:number)=>Math.floor(Math.random() * N);
+const generateId = (prefix:string, N:number)=>`${prefix}${N + 1}`;
+
 
 export const resolvers = { // make api calls to actua DB here
   Query: {
@@ -81,6 +102,13 @@ export const resolvers = { // make api calls to actua DB here
   //RESOLVE REVIEW DATA
   Review:{
     author:(review:Review.Review)=>allUsers.find((user:User.User)=>user.id===review.authorId),
+    book:(review:Review.Review)=>allBooks.find((book)=>book.id===review.bookId),
+  },
+
+    //RESOLVE LIST DATA
+  List:{
+    author:(list:List.List) => allUsers.find((user:User.User)=>user.id===list.authorId),
+    items:(list:List.List) => allBooks.filter((book)=>list.items?.includes(book.id)),
   },
 
   //RESOLVE BOOK DATA
@@ -88,20 +116,54 @@ export const resolvers = { // make api calls to actua DB here
     reviews:(book:Book.Book) => allReviews.filter((review)=>review.bookId===book.id),
   },
 
-  //RESOLVE LIST DATA
-  List:{
-    items:(list:List.List) => allBooks.filter((book)=>list.items?.includes(book.id)),
-  },
-
   //RESOLVE USER DATA
   User:{
     favourites:(user:User.User)=>allBooks.filter((book)=>user.favourites?.includes(book.id)),
     added:(user:User.User)=>allBooks.filter((book)=>user.added?.includes(book.id)),
     reviewed:(user:User.User)=>allBooks.filter((book)=>user.reviewed?.includes(book.id)),
-    myReviews:(user:User.User)=>allReviews.filter((review)=>user.myReviews?.includes(review.id)),
-    myLists:(user:User.User)=>allLists.filter((list)=>user.myLists?.includes(list.id)),
+    //myReviews:(user:User.User)=>allReviews.filter((review)=>user.myReviews?.includes(review.id)),
+    myReviews:(user:User.User)=>allReviews.filter((review)=>review.authorId===user.id),
+    //myLists:(user:User.User)=>allLists.filter((list)=>user.myLists?.includes(list.id)),
+    myLists:(user:User.User)=>allLists.filter((list)=>list.authorId===user.id),
     following:(user:User.User)=>allUsers.filter((otherUser:User.User)=>user.following?.includes(otherUser.id))
   },
+
+
+  Mutation:{
+    createUser: (parent:any, args:{input:{name:string, about?:string}}) => {
+      const newUser : User.User = {
+        id: generateId("u", allUsers.length),
+        name:args.input.name,
+        about: (args.input.about || abouts[randomIndex(abouts.length)]) as string,
+        favourites: [],
+        added: [],
+        reviewed: [],
+        myReviews: [],
+        myLists: [],
+        following: []
+
+      }
+      console.log(`New user created: ${newUser.name} (${newUser.id})`);
+      allUsers.push(newUser);
+      return newUser;
+    },
+
+    updateUserName: (parent:any, args:{input:{id:string, name:string}})=>{
+      let updatedUser;
+      const {id, name} = args.input;
+      allUsers.forEach((user:User.User) => {
+        if(user.id===id){
+           user.name = name;
+           updatedUser = user;
+        }
+      });
+
+      return updatedUser;
+    },
+
+    deleteUser:(parent:any, args:{id:string}) => LD.remove(allUsers,(user)=>user.id===args.id),
+    
+  }
 
 
 };

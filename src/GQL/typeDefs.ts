@@ -4,8 +4,17 @@ export const typeDefs = gql`
   type Review{
     id: ID!
     author: User!
+    book: Book!
     text: String!
     rating: Float
+  }
+
+  type List{
+    id: ID!
+    author: User!
+    name: String!
+    public: Boolean!
+    items: [Book!]!
   }
 
 
@@ -22,18 +31,11 @@ export const typeDefs = gql`
     reviews: [Review!]
   }
 
-  type List{
-    id: ID!
-    name: String!
-    public: Boolean!
-    items: [Book!]!
-  }
-
   type User{
     id: ID!
     name: String!
     about: String
-    favourites: [Book!]!
+    favourites: [Book!]
     added: [Book!]
     reviewed: [Book!]
     myReviews: [Review!]
@@ -55,8 +57,26 @@ export const typeDefs = gql`
     ): [Book!]
     book(title: String!): Book
 
+    lists(userId:String!): [List!]
+    list(listId:String!): List
+
     reviews(authorId:String, bookId:String): [Review!]
     review(id:ID!): Review
+  }
+  
+ 
+  input CreateUserInput{
+    name: String!
+    about: String
+  }
+  input UpdateUserNameInput{
+    id: ID!
+    name: String!
+  }
+  type Mutation{
+    createUser(input: CreateUserInput!): User!
+    updateUserName(input: UpdateUserNameInput!): User
+    deleteUser(id: ID!): User
   }
 
 
