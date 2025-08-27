@@ -9,6 +9,7 @@ export interface User{
   reviewed: string[],
   myReviews: string[],
   myLists: string[],
+  following: string[]
 }
 
 const allUsers : User[] =  [
@@ -20,7 +21,8 @@ const allUsers : User[] =  [
       "added": ["b1", "b2", "b3"],
       "reviewed": ["b1", "b3"],
       "myReviews": ["r1", "r2"],
-      "myLists": ["l1"]
+      "myLists": ["l1"],
+      "following":[],
     },
     {
       "id": "u2",
@@ -30,7 +32,8 @@ const allUsers : User[] =  [
       "added": ["b4", "b5"],
       "reviewed": ["b4"],
       "myReviews": ["r3"],
-      "myLists": ["l2"]
+      "myLists": ["l2"],
+      "following": ["u1"]
     }
   ]
 

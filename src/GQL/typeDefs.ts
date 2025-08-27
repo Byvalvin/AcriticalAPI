@@ -55,7 +55,7 @@ export const typeDefs = gql`
     ): [Book!]
     book(title: String!): Book
 
-    reviews: [Review!]
+    reviews(authorId:String, bookId:String): [Review!]
     review(id:ID!): Review
   }
 
