@@ -17,7 +17,6 @@ export const typeDefs = gql`
     items: [Book!]!
   }
 
-
   type Book{
     id: ID!
     author: String!
@@ -64,7 +63,25 @@ export const typeDefs = gql`
     review(id:ID!): Review
   }
   
- 
+  input CreateListInput{
+    userId: ID!
+    name: String!
+    visible: Boolean!
+  }
+  input CreateReviewInput{
+    userId: ID!
+    bookId: ID!
+    text: String!
+    rating: Float
+  }
+  input CreateBookInput{
+    author: String!
+    title: String!
+    genre: Genre!
+    summary: String
+    date: String!
+    adapted: Boolean
+  }
   input CreateUserInput{
     name: String!
     about: String
@@ -73,9 +90,26 @@ export const typeDefs = gql`
     id: ID!
     name: String!
   }
+  input UpdateUserAboutInput{
+    id: ID!
+    about: String!
+  }
+  input AddBookInput{
+    userId: ID!
+    bookId: ID!
+    dest: String!
+  }
   type Mutation{
+    createList(input: CreateListInput!): List!
+
+    createReview(input: CreateReviewInput!): Review!
+
+    createBook(input: CreateBookInput!): Book!
+
     createUser(input: CreateUserInput!): User!
     updateUserName(input: UpdateUserNameInput!): User
+    updateUserAbout(input: UpdateUserAboutInput!): User
+    addBookToUser(input: AddBookInput!): Book
     deleteUser(id: ID!): User
   }
 

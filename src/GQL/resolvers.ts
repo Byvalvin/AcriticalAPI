@@ -8,6 +8,7 @@ import Book = require('../DB/books');
 import User = require('../DB/users');
 import type List = require('../DB/lists');
 import type Review = require('../DB/reviews');
+import add = require('lodash');
 
 
 const normalize = (str: string): string =>
@@ -130,6 +131,55 @@ export const resolvers = { // make api calls to actua DB here
 
 
   Mutation:{
+    createList: (parent:any, args:{input:{userId:string, name:string, visible:boolean}})=>{
+      const {userId, name, visible} = args.input;
+      const newList:List.List = {
+        id: generateId("l",allLists.length),
+        authorId:userId,
+        name,
+        visible,
+        items: []
+      };
+      console.log(`New list created: ${newList.name} by ${newList.authorId} (${newList.id})`);
+      allLists.push(newList);
+      return newList;
+    },
+
+    createReview: (parent:any, args:{input:{userId:string, bookId: string, text:string, rating:number}})=>{
+      const {userId, bookId, text, rating} = args.input;
+      const newReview:Review.Review = {
+        id: generateId("r",allReviews.length),
+        authorId: userId,
+        bookId,
+        text,
+        rating: rating || -1
+      }
+      console.log(`New review added: ${newReview.authorId} by ${newReview.bookId} (${text})`);
+      allReviews.push(newReview);
+      return newReview;
+    },
+
+
+    createBook: (parent:any, 
+      args:{input:{ author: string, title: string, genre: Genre.Genre, summary: string, date: string, adapted?: boolean}})=>{
+      const {author, title, genre, summary, date, adapted} = args.input;
+      const newBook:Book.Book = {
+        id: generateId("b",allBooks.length),
+        author,
+        title,
+        aliases: [],
+        genre,
+        genres: [],
+        summary,
+        date,
+        adapted: adapted || false,
+        reviews: [],
+      }
+      console.log(`New book added: ${newBook.title} by ${newBook.author} (${newBook.id})`);
+      allBooks.push(newBook);
+      return newBook;
+    },
+
     createUser: (parent:any, args:{input:{name:string, about?:string}}) => {
       const newUser : User.User = {
         id: generateId("u", allUsers.length),
@@ -159,6 +209,38 @@ export const resolvers = { // make api calls to actua DB here
       });
 
       return updatedUser;
+    },
+    updateUserAbout: (parent:any, args:{input:{id:string, about:string}})=>{
+      let updatedUser;
+      const {id, about} = args.input;
+      allUsers.forEach((user:User.User) => {
+        if(user.id===id){
+           user.about = about;
+           updatedUser = user;
+        }
+      });
+
+      return updatedUser;
+    },
+
+    addBookToUser: (parent:any, args:{input:{userId:string, bookId:string, dest:string}})=>{
+      const {userId, bookId, dest} = args.input;
+      allUsers.forEach((user:User.User)=>{
+        if(user.id===userId){
+          switch(dest.toUpperCase()){
+            case "F":
+              user.favourites.push(bookId);
+            case "A":
+              user.added.push(bookId);
+            case "R":
+              user.reviewed.push(bookId);
+            default:
+              user.favourites.push(bookId);
+          }
+        }
+      });
+
+      console.log(`book added to ${dest}: ${userId} (${bookId})`);
     },
 
     deleteUser:(parent:any, args:{id:string}) => LD.remove(allUsers,(user)=>user.id===args.id),
