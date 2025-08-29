@@ -42,6 +42,13 @@ export const typeDefs = gql`
     following: [User!]
   }
 
+  enum BookListType {
+    FAVOURITE
+    ADDED
+    REVIEWED
+  }
+
+
 
   type Query {
     hello: String
@@ -97,7 +104,7 @@ export const typeDefs = gql`
   input AddBookInput{
     userId: ID!
     bookId: ID!
-    dest: String!
+    dest: BookListType!
   }
   type Mutation{
     createList(input: CreateListInput!): List!

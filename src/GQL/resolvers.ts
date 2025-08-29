@@ -8,7 +8,6 @@ import Book = require('../DB/books');
 import User = require('../DB/users');
 import type List = require('../DB/lists');
 import type Review = require('../DB/reviews');
-import add = require('lodash');
 
 
 const normalize = (str: string): string =>
@@ -227,15 +226,18 @@ export const resolvers = { // make api calls to actua DB here
       const {userId, bookId, dest} = args.input;
       allUsers.forEach((user:User.User)=>{
         if(user.id===userId){
-          switch(dest.toUpperCase()){
-            case "F":
+          switch (dest) {
+            case "FAVOURITE":
               user.favourites.push(bookId);
-            case "A":
+              break;
+            case "ADDED":
               user.added.push(bookId);
-            case "R":
+              break;
+            case "REVIEWED":
               user.reviewed.push(bookId);
+              break;
             default:
-              user.favourites.push(bookId);
+              throw new Error("Invalid destination");
           }
         }
       });
