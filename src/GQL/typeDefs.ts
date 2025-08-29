@@ -101,7 +101,7 @@ export const typeDefs = gql`
     id: ID!
     about: String!
   }
-  input AddBookInput{
+  input UserBookInput{
     userId: ID!
     bookId: ID!
     dest: BookListType!
@@ -109,14 +109,33 @@ export const typeDefs = gql`
   type Mutation{
     createList(input: CreateListInput!): List!
 
+
     createReview(input: CreateReviewInput!): Review!
 
+
     createBook(input: CreateBookInput!): Book!
+
 
     createUser(input: CreateUserInput!): User!
     updateUserName(input: UpdateUserNameInput!): User
     updateUserAbout(input: UpdateUserAboutInput!): User
-    addBookToUser(input: AddBookInput!): Book
+
+    addBookToUser(input: UserBookInput!): Book
+    removeBookFromUser(input: UserBookInput!): Book
+
+    createUserReview(input: CreateUserReviewInput!): Review
+    updateUserReview(input: UpdateUserReviewInput!): Review
+    deleteUserReview(id: ID!): Review
+
+    createUserList(input: UserListInput): List
+    updateUserList(input: UserListInput): List
+    deleteUserList(id: ID!): List
+    addBookToUserList(input: UpdateUserListInput): List
+    removeBookFromUserList(input: UpdateUserListInput): List
+
+    addToUserFollowing(input: UpdateUserFollowingInput): User
+    removeFromUserFollowing(input: UpdateUserFollowingInput): User
+    
     deleteUser(id: ID!): User
   }
 
