@@ -13,7 +13,7 @@ export const typeDefs = gql`
     id: ID!
     author: User!
     name: String!
-    public: Boolean!
+    visible: Boolean!
     items: [Book!]!
   }
 
@@ -106,16 +106,30 @@ export const typeDefs = gql`
     bookId: ID!
     dest: BookListType!
   }
+  input UpdateUserReviewInput{
+    id: ID!
+    text: String
+    rating: Float
+  }
+  input UpdateUserListInput{
+    id: ID!
+    name: String!
+    visible: Boolean!
+  }
+  input UserListInput{
+    id: ID!
+    items: [String!]
+  }
+  input UpdateUserFollowingInput {
+    id: ID!
+    followingId: ID!
+  }
+    
+  
   type Mutation{
-    createList(input: CreateListInput!): List!
-
-
-    createReview(input: CreateReviewInput!): Review!
-
-
     createBook(input: CreateBookInput!): Book!
 
-
+    
     createUser(input: CreateUserInput!): User!
     updateUserName(input: UpdateUserNameInput!): User
     updateUserAbout(input: UpdateUserAboutInput!): User
@@ -123,19 +137,19 @@ export const typeDefs = gql`
     addBookToUser(input: UserBookInput!): Book
     removeBookFromUser(input: UserBookInput!): Book
 
-    createUserReview(input: CreateUserReviewInput!): Review
+    createUserReview(input: CreateReviewInput!): Review # createReview
     updateUserReview(input: UpdateUserReviewInput!): Review
     deleteUserReview(id: ID!): Review
 
-    createUserList(input: UserListInput): List
-    updateUserList(input: UserListInput): List
+    createUserList(input: CreateListInput!): List # createList
+    updateUserList(input: UpdateUserListInput!): List
     deleteUserList(id: ID!): List
-    addBookToUserList(input: UpdateUserListInput): List
-    removeBookFromUserList(input: UpdateUserListInput): List
+    addBookToUserList(input: UserListInput!): List
+    removeBookFromUserList(input: UserListInput!): List
 
-    addToUserFollowing(input: UpdateUserFollowingInput): User
-    removeFromUserFollowing(input: UpdateUserFollowingInput): User
-    
+    addToUserFollowing(input: UpdateUserFollowingInput!): User
+    removeFromUserFollowing(input: UpdateUserFollowingInput!): User
+
     deleteUser(id: ID!): User
   }
 

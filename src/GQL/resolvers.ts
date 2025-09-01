@@ -95,8 +95,6 @@ export const resolvers = { // make api calls to actua DB here
       });
     },
     review: (parent:any, args:{id:string}) => LD.find(allReviews, {id:args.id})
-
-
   },
 
   //RESOLVE REVIEW DATA
@@ -130,7 +128,33 @@ export const resolvers = { // make api calls to actua DB here
 
 
   Mutation:{
-    createList: (parent:any, args:{input:{userId:string, name:string, visible:boolean}})=>{
+    addToUserFollowing: (parent: any, args: { input: { id: string; followingId: string } }) => {
+      const { id, followingId } = args.input;
+      let updatedUser;
+      allUsers.forEach((user: User.User) => {
+        if (user.id === id) {
+          if (!user.following.includes(followingId)) {
+            user.following.push(followingId);
+          }
+          updatedUser = user;
+        }
+      });
+      return updatedUser;
+    },
+    removeFromUserFollowing: (parent: any, args: { input: { id: string; followingId: string } }) => {
+      const { id, followingId } = args.input;
+      let updatedUser;
+      allUsers.forEach((user: User.User) => {
+        if (user.id === id) {
+          user.following = user.following.filter((fid) => fid !== followingId);
+          updatedUser = user;
+        }
+      });
+      return updatedUser;
+    },
+
+
+    createUserList: (parent:any, args:{input:{userId:string, name:string, visible:boolean}})=>{
       const {userId, name, visible} = args.input;
       const newList:List.List = {
         id: generateId("l",allLists.length),
@@ -143,8 +167,47 @@ export const resolvers = { // make api calls to actua DB here
       allLists.push(newList);
       return newList;
     },
+    updateUserList: (parent: any, args: { input: { id: string; name?: string; visible?: boolean } }) => {
+      const { id, name, visible } = args.input;
+      let updatedList;
+      allLists.forEach((list: List.List) => {
+        if (list.id === id) {
+          list.name = name || list.name;
+          list.visible = visible===undefined ? list.visible : visible ;
+          updatedList = list;
+        }
+      });
+      return updatedList;
+    },
+    addBookToUserList: (parent: any, args: { input: { id: string; items: string[] } }) => {
+      const { id, items } = args.input;
+      let updatedList;
+      allLists.forEach((list: List.List) => {
+        if (list.id === id) {
+          list.items = LD.union(list.items, items); // Avoid duplicates
+          updatedList = list;
+        }
+      });
+      return updatedList;
+    },
+    removeBookFromUserList: (parent: any, args: { input: { id: string; items: string[] } }) => {
+      const { id, items } = args.input;
+      let updatedList;
+      allLists.forEach((list: List.List) => {
+        if (list.id === id) {
+          list.items = list.items.filter((bookId) => !items.includes(bookId));
+          updatedList = list;
+        }
+      });
+      return updatedList;
+    },
+    deleteUserList: (parent: any, args: { id: string }) => {
+      const removed = LD.remove(allLists, (list) => list.id === args.id);
+      return removed[0]; // Return the deleted list
+    },
 
-    createReview: (parent:any, args:{input:{userId:string, bookId: string, text:string, rating:number}})=>{
+
+    createUserReview: (parent:any, args:{input:{userId:string, bookId: string, text:string, rating:number}})=>{
       const {userId, bookId, text, rating} = args.input;
       const newReview:Review.Review = {
         id: generateId("r",allReviews.length),
@@ -157,6 +220,19 @@ export const resolvers = { // make api calls to actua DB here
       allReviews.push(newReview);
       return newReview;
     },
+    updateUserReview: (parent:any, args:{input:{id: string, text?:string, rating?:number}})=>{
+      const {id, text, rating} = args.input;
+      let updatedReview;
+      allReviews.forEach((review)=>{
+        if(review.id===id){
+          review.text = text || review.text,
+          review.rating = rating || review.rating
+          updatedReview = review
+        }
+      })
+      return updatedReview;
+    },
+    deleteUserReview:(parent:any, args:{id:string}) => LD.remove(allReviews,(review)=>review.id===args.id),
 
 
     createBook: (parent:any, 
@@ -179,6 +255,7 @@ export const resolvers = { // make api calls to actua DB here
       return newBook;
     },
 
+
     createUser: (parent:any, args:{input:{name:string, about?:string}}) => {
       const newUser : User.User = {
         id: generateId("u", allUsers.length),
@@ -196,7 +273,6 @@ export const resolvers = { // make api calls to actua DB here
       allUsers.push(newUser);
       return newUser;
     },
-
     updateUserName: (parent:any, args:{input:{id:string, name:string}})=>{
       let updatedUser;
       const {id, name} = args.input;
@@ -221,7 +297,6 @@ export const resolvers = { // make api calls to actua DB here
 
       return updatedUser;
     },
-
     addBookToUser: (parent:any, args:{input:{userId:string, bookId:string, dest:string}})=>{
       const {userId, bookId, dest} = args.input;
       allUsers.forEach((user:User.User)=>{
@@ -243,11 +318,10 @@ export const resolvers = { // make api calls to actua DB here
       });
 
       console.log(`book added to ${dest}: ${userId} (${bookId})`);
+      return allBooks.find((book) => book.id === bookId);
     },
-
     deleteUser:(parent:any, args:{id:string}) => LD.remove(allUsers,(user)=>user.id===args.id),
-    
-  }
 
+  }
 
 };
