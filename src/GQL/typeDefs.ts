@@ -137,9 +137,11 @@ export const typeDefs = gql`
     addBookToUser(input: UserBookInput!): Book
     removeBookFromUser(input: UserBookInput!): Book
 
+
     createUserReview(input: CreateReviewInput!): Review # createReview
     updateUserReview(input: UpdateUserReviewInput!): Review
     deleteUserReview(id: ID!): Review
+
 
     createUserList(input: CreateListInput!): List # createList
     updateUserList(input: UpdateUserListInput!): List
@@ -147,10 +149,13 @@ export const typeDefs = gql`
     addBookToUserList(input: UserListInput!): List
     removeBookFromUserList(input: UserListInput!): List
 
+
     addToUserFollowing(input: UpdateUserFollowingInput!): User
     removeFromUserFollowing(input: UpdateUserFollowingInput!): User
 
+
     deleteUser(id: ID!): User
+    deleteBook(id: ID!): Book
   }
 
 
