@@ -135,7 +135,11 @@ export const resolvers = { // make api calls to actua DB here
         return matchesAuthor && matchesBook;
       });
     },
-    review: (parent:any, args:{id:string}) => LD.find(allReviews, {id:args.id})
+    review: (parent:any, args:{id:string}) => LD.find(allReviews, {id:args.id}),
+
+    //LISTS
+    lists: () => allLists,
+    list: (parent:any, args:{id:string}) => LD.find(allLists, {id:args.id}),
   },
 
   //RESOLVE REVIEW DATA
@@ -169,6 +173,9 @@ export const resolvers = { // make api calls to actua DB here
   Mutation:{
     addToUserFollowing: (parent: any, args: { input: { id: string; followingId: string } }) => {
       const { id, followingId } = args.input;
+      if(id===followingId){
+        throw new Error("A User can't follow themself");
+      }
       let updatedUser;
       allUsers.forEach((user: User.User) => {
         if (user.id === id) {
@@ -218,23 +225,23 @@ export const resolvers = { // make api calls to actua DB here
       });
       return updatedList;
     },
-    addBookToUserList: (parent: any, args: { input: { id: string; items: string[] } }) => {
-      const { id, items } = args.input;
+    addBookToUserList: (parent: any, args: { input: { id: string; bookId: string } }) => {
+      const { id, bookId } = args.input;
       let updatedList;
       allLists.forEach((list: List.List) => {
         if (list.id === id) {
-          list.items = LD.union(list.items, items); // Avoid duplicates
+          list.items = LD.union(list.items, [bookId]); // Avoid duplicates
           updatedList = list;
         }
       });
       return updatedList;
     },
-    removeBookFromUserList: (parent: any, args: { input: { id: string; items: string[] } }) => {
-      const { id, items } = args.input;
+    removeBookFromUserList: (parent: any, args: { input: { id: string; bookId: string } }) => {
+      const { id, bookId } = args.input;
       let updatedList;
       allLists.forEach((list: List.List) => {
         if (list.id === id) {
-          list.items = list.items.filter((bookId) => !items.includes(bookId));
+          list.items = list.items.filter((aBookId) => aBookId!==bookId);
           updatedList = list;
         }
       });

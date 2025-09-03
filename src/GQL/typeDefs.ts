@@ -118,7 +118,7 @@ export const typeDefs = gql`
   }
   input UserListInput{
     id: ID!
-    items: [String!]
+    bookId: ID!
   }
   input UpdateUserFollowingInput {
     id: ID!
