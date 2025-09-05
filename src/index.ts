@@ -8,8 +8,12 @@ import dotenv from 'dotenv';
 
 import { typeDefs } from './GQL/typeDefs';
 import { resolvers } from './GQL/resolvers';
+import connectDB from "./DB/db";
 
 dotenv.config();
+
+// CONNEC TDB
+connectDB();
 
 const PORT = process.env.PORT || 4000;
 

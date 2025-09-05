@@ -9,6 +9,7 @@ export interface Book {
   genres: Genre[];
   summary: string;
   date: string;
+  cover?: string;
   adapted: boolean;
   reviews: string[]; // These are review IDs
 }
