@@ -1,13 +1,13 @@
 import LD from 'lodash';
-import allBooks from '../DB/books';
-import allReviews from '../DB/reviews';
-const { allUsers } = require('../DB/users');
-import allLists from '../DB/lists';
+import allBooks from '../DB/dummyData/books';
+import allReviews from '../DB/dummyData/reviews';
+const { allUsers } = require('../DB/dummyData/users');
+import allLists from '../DB/dummyData/lists';
 import Genre = require('../enums/Genre');
-import Book = require('../DB/books');
-import User = require('../DB/users');
-import type List = require('../DB/lists');
-import type Review = require('../DB/reviews');
+import Book = require('../DB/dummyData/books');
+import User = require('../DB/dummyData/users');
+import type List = require('../DB/dummyData/lists');
+import type Review = require('../DB/dummyData/reviews');
 
 
 const normalize = (str: string): string =>
@@ -374,6 +374,21 @@ export const resolvers = { // make api calls to actua DB here
 
       return updatedUser;
     },
+    updateUserAvatar: async (_: any, { id, avatarUrl }: { id: string; avatarUrl: string }) => {
+      try {
+        let user;
+        allUsers.forEach((user:User.User)=>{
+          if(user.id===id){
+            user.avatar = avatarUrl;
+          }
+        });
+        //const user = await User.findByIdAndUpdate(id, { avatar: avatarUrl }, { new: true });
+        return user;
+      } catch (err) {
+        console.error(err);
+        throw new Error('Failed to update avatar');
+      }
+    },
     addBookToUser: (parent:any, args:{input:{userId:string, bookId:string, dest:string}})=>{
       const {userId, bookId, dest} = args.input;
       allUsers.forEach((user:User.User)=>{
@@ -422,5 +437,4 @@ export const resolvers = { // make api calls to actua DB here
     deleteBook:(parent:any, args:{id:string}) => LD.remove(allBooks,(book)=>book.id===args.id)[0],
 
   }
-
 };

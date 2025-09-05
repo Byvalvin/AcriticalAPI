@@ -4,6 +4,7 @@ export interface User{
   id: string,
   name: string,
   about: string,
+  avatar?: string,
   favourites: string[],
   added: string[],
   reviewed: string[],

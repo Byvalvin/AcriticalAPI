@@ -10,6 +10,8 @@ import { typeDefs } from './GQL/typeDefs';
 import { resolvers } from './GQL/resolvers';
 import connectDB from "./DB/db";
 
+import avatarUploadRouter from './routes/upload'; // 👈 import the route
+
 dotenv.config();
 
 // CONNEC TDB
@@ -29,13 +31,15 @@ async function startServer() {
 
 //   app.use(cors(), bodyParser.json());
 //   app.use('/GQL', expressMiddleware(apolloServer));
-    app.use(
-        '/GQL',
-        cors(),
-        bodyParser.json(),
-        expressMiddleware(apolloServer)
-    );
+  app.use(
+      '/GQL',
+      cors(),
+      bodyParser.json(),
+      expressMiddleware(apolloServer)
+  );
 
+  // extra route for uploads
+  app.use('/upload-avatar', avatarUploadRouter);
 
   app.listen(PORT, () => {
     console.log(`🚀 AcriticalAPI running at http://localhost:${PORT}/GQL`);

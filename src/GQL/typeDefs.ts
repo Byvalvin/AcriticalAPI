@@ -22,6 +22,7 @@ export const typeDefs = gql`
     author: String!
     title: String!
     aliases: [String!]
+    cover: String # 👈 ADD THIS
     genre: Genre!
     genres: [Genre!]
     summary: String
@@ -34,6 +35,7 @@ export const typeDefs = gql`
     id: ID!
     name: String!
     about: String
+    avatar: String # 👈 ADD THIS
     favourites: [Book!]
     added: [Book!]
     reviewed: [Book!]
@@ -124,6 +126,10 @@ export const typeDefs = gql`
     id: ID!
     followingId: ID!
   }
+  input UpdateUserAvatarInput{
+    id: ID!
+    avatarUrl: String!
+  }
     
   
   type Mutation{
@@ -133,6 +139,7 @@ export const typeDefs = gql`
     createUser(input: CreateUserInput!): User!
     updateUserName(input: UpdateUserNameInput!): User
     updateUserAbout(input: UpdateUserAboutInput!): User
+    updateUserAvatar(input: UpdateUserAvatarInput!): User
 
     addBookToUser(input: UserBookInput!): Book
     removeBookFromUser(input: UserBookInput!): Book

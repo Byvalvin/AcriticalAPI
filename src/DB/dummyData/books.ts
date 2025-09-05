@@ -1,4 +1,4 @@
-import { Genre } from '../enums/Genre'; // Adjust path as needed
+import { Genre } from '../../enums/Genre'; // Adjust path as needed
 
 export interface Book {
   id: string;
