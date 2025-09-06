@@ -4,10 +4,17 @@ import allReviews from '../DB/dummyData/reviews';
 const { allUsers } = require('../DB/dummyData/users');
 import allLists from '../DB/dummyData/lists';
 import Genre = require('../enums/Genre');
-import Book = require('../DB/dummyData/books');
-import User = require('../DB/dummyData/users');
-import type List = require('../DB/dummyData/lists');
-import type Review = require('../DB/dummyData/reviews');
+// import Book = require('../DB/dummyData/books');
+//import User = require('../DB/dummyData/users');
+//import type List = require('../DB/dummyData/lists');
+//import type Review = require('../DB/dummyData/reviews');
+
+import { Types } from 'mongoose'; // needed for ObjectId validation
+import { Book, IBook } from '../DB/models/Book';
+import { User, IUser } from '../DB/models/User';
+import { Review, IReview } from '../DB/models/Review';
+import { List, IList } from '../DB/models/List';
+
 
 
 const normalize = (str: string): string =>
@@ -75,71 +82,158 @@ const getMaxIdNumber = (items: { id: string }[]): number => {
 const generateId = (prefix:string, N:number)=>`${prefix}${N + 1}`;
 
 
+interface BookQueryArgs {
+  author?: string;
+  title?: string;
+  genre?: Genre.Genre;
+  date?: string;         // ISO string
+  adapted?: boolean;
+}
+interface ReviewQueryArgs {
+  userId?: string;
+  bookId?: string;
+  ratingMin?: number;
+  ratingMax?: number;
+}
+interface ListQueryArgs {
+  userId: string;
+  name?: string;
+  visible?: boolean;
+}
+
 export const resolvers = { // make api calls to actua DB here
   Query: {
     hello: () => 'Hello from AcriticalAPI!',
 
     //BOOKS
-    books: (parent:any, args:{author:string, title:string, genre:Genre.Genre, genres:Genre.Genre[], date:string, adapted:string}) => {
-      return LD.filter(allBooks, (book:Book.Book) => {
-        // Match author
-        if (args.author && normalize(book.author) !== normalize(args.author)) return false;
-
-        // Match title or aliases
-        if (args.title) {
-          const titleNorm = normalize(args.title);
-          const titleMatch =
-            normalize(book.title).includes(titleNorm) ||
-            (book.aliases && book.aliases.some((alias) => normalize(alias).includes(titleNorm)));
-          if (!titleMatch) return false;
-        }
-
-        // Match genre or genres
-        if (args.genre) {
-          const genreNorm = normalize(args.genre);
-          const genreMatch =
-            normalize(book.genre) === genreNorm ||
-            (book.genres && book.genres.some((g) => normalize(g) === genreNorm));
-          if (!genreMatch) return false;
-        }
-
-        // Match any of the genres
-        if (args.genres && LD.isArray(args.genres)) {
-          const genreNorms = args.genres.map(normalize);
-          const genreOverlap = genreNorms.some((g:string) =>
-            book.genres.some((bg) => normalize(bg) === g)
-          );
-          if (!genreOverlap) return false;
-        }
-
-        // Match date
-        if (args.date && book.date !== args.date) return false;
-
-        // Match adapted
-        if (typeof args.adapted === 'boolean' && book.adapted !== args.adapted) return false;
-
-        return true;
-      });
+    books: async (_parent: any, args: BookQueryArgs): Promise<IBook[]> => {
+      const filter: any = {};
+      // Title (search in both title and aliases, partial + case-insensitive)
+      if (args.title) {
+        const titleRegex = new RegExp(normalize(args.title), 'i');
+        filter.$or = [
+          { title: { $regex: titleRegex } },
+          { aliases: { $elemMatch: { $regex: titleRegex } } }
+        ];
+      }
+      // Author
+      if (args.author) filter.author = new RegExp(normalize(args.author), 'i');
+      // Genre (match if either genre or genres contains it)
+      if (args.genre) {
+        filter.$or = filter.$or || [];
+        filter.$or.push(
+          { genre: args.genre },
+          { genres: args.genre }
+        );
+      }
+      // Date (exact match, assumes ISO string passed)
+      if (args.date) {
+        const dateObj = new Date(args.date);
+        if (!isNaN(dateObj.getTime())) filter.date = dateObj;
+      }
+      // Adapted (boolean)
+      if (typeof args.adapted === 'boolean') filter.adapted = args.adapted;
+      
+      return await Book.find(filter).exec();
     },
-    book: (parent:any, args:{title:string}) => LD.find(allBooks, {title:args.title}),
+    book: async (_parent: any, args: { id: string }): Promise<IBook | null> => {
+      if (!Types.ObjectId.isValid(args.id)) {
+        throw new Error('Invalid book ID');
+      }
+      const book = await Book.findById(args.id).exec();
+      return book;
+    },
 
     //USERS
-    users: () => allUsers,
-    user: (parent:any, args:{id:string}) => LD.find(allUsers, {id:args.id}),
+    users: async (_parent: any, args: { name?: string }): Promise<IUser[]> => {
+      const filter: any = {};
+
+      if (args.name) {
+        const nameRegex = new RegExp(args.name.trim(), 'i'); // Case-insensitive partial match
+        filter.name = nameRegex;
+      }
+
+      return await User.find(filter).exec();
+    },
+    user: async (_parent: any, args: { id: string }): Promise<IUser | null> => {
+      if (!Types.ObjectId.isValid(args.id)) {
+        throw new Error('Invalid user ID');
+      }
+      return await User.findById(args.id).exec();
+    },
+
 
     //REVIEWS
-    reviews: (parent: any, args: { authorId?: string; bookId?: string }) => {
-      return allReviews.filter(review => {
-        const matchesAuthor = args.authorId ? review.authorId === args.authorId : true;
-        const matchesBook = args.bookId ? review.bookId === args.bookId : true;
-        return matchesAuthor && matchesBook;
-      });
+    reviews: async (_parent: any, args: ReviewQueryArgs): Promise<IReview[]> => {
+      const filter: any = {};
+
+      // Filter by userId (author)
+      if (args.userId) {
+        if (!Types.ObjectId.isValid(args.userId)) {
+          throw new Error('Invalid user ID');
+        }
+        filter.author = new Types.ObjectId(args.userId);
+      }
+      // Filter by bookId
+      if (args.bookId) {
+        if (!Types.ObjectId.isValid(args.bookId)) {
+          throw new Error('Invalid book ID');
+        }
+        filter.book = new Types.ObjectId(args.bookId);
+      }
+
+      // Filter by rating range
+      if (typeof args.ratingMin === 'number' || typeof args.ratingMax === 'number') {
+        filter.rating = {};
+        if (typeof args.ratingMin === 'number') {
+          filter.rating.$gte = args.ratingMin;
+        }
+        if (typeof args.ratingMax === 'number') {
+          filter.rating.$lte = args.ratingMax;
+        }
+      }
+
+      return await Review.find(filter).exec();
     },
-    review: (parent:any, args:{id:string}) => LD.find(allReviews, {id:args.id}),
+
+    review: async (_parent: any, args: { id: string }): Promise<IReview | null> => {
+      if (!Types.ObjectId.isValid(args.id)) {
+        throw new Error('Invalid review ID');
+      }
+
+      return await Review.findById(args.id).exec();
+    },
 
     //LISTS
-    lists: () => allLists,
-    list: (parent:any, args:{id:string}) => LD.find(allLists, {id:args.id}),
+    lists: async (_parent: any, args: ListQueryArgs): Promise<IList[]> => {
+      const filter: any = {};
+
+      // Author (userId)
+      if (args.userId) {
+        if (!Types.ObjectId.isValid(args.userId)) {
+          throw new Error('Invalid user ID');
+        }
+        filter.author = new Types.ObjectId(args.userId);
+      }
+
+      // Name (partial, case-insensitive)
+      if (args.name) {
+        const nameRegex = new RegExp(args.name, 'i');
+        filter.name = { $regex: nameRegex };
+      }
+
+      // Visibility
+      if (typeof args.visible === 'boolean') filter.visible = args.visible;
+
+      return await List.find(filter).exec();
+    },
+
+    list: async (_parent: any, args: {id:string}): Promise<IList | null> => {
+      if (!Types.ObjectId.isValid(args.id)) {
+        throw new Error('Invalid list ID');
+      }
+      return await List.findById(args.id).exec();
+    }
   },
 
   //RESOLVE REVIEW DATA

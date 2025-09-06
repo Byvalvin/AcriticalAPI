@@ -32,4 +32,4 @@ const ListSchema: Schema<IList> = new Schema({
 });
 
 const List = mongoose.model<IList>('List', ListSchema);
-export default List;
+export { List, IList};

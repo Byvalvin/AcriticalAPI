@@ -63,12 +63,12 @@ export const typeDefs = gql`
       genre: Genre, date: String,
       adapted: Boolean
     ): [Book!]
-    book(title: String!): Book
+    book(id: ID!): Book
 
-    lists(userId:String!): [List!]
+    lists(userId: ID, name: String, visible: Boolean): [List!]
     list(listId:String!): List
 
-    reviews(authorId:String, bookId:String): [Review!]
+    reviews(userId:String, bookId:String): [Review!]
     review(id:ID!): Review
   }
   

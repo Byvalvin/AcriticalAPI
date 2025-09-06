@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 // TypeScript interface
 export interface IUser extends Document {
   name: string;
-  about: string;
+  about?: string;
   avatar?: string;
   favourites: mongoose.Types.ObjectId[];
   added: mongoose.Types.ObjectId[];
@@ -23,6 +23,7 @@ const UserSchema: Schema<IUser> = new Schema({
     type: String,
     trim: true,
     maxlength: 300,
+    default: '',
   },
   avatar: {
     type: String,
@@ -62,4 +63,4 @@ const UserSchema: Schema<IUser> = new Schema({
 });
 
 const User = mongoose.model<IUser>('User', UserSchema);
-export default User;
+export {User, IUser};

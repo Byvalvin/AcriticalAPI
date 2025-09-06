@@ -35,4 +35,4 @@ const ReviewSchema: Schema<IReview> = new Schema({
 }, { timestamps: true }); // Add createdAt and updatedAt automatically
 
 const Review = mongoose.model<IReview>('Review', ReviewSchema);
-export default Review;
+export {Review, IReview};
