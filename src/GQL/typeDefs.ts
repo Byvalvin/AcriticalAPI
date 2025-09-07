@@ -176,7 +176,6 @@ export const typeDefs = gql`
 
 
     deleteUser(id: ID!): User
-    deleteBook(id: ID!): Book
   }
 
 
