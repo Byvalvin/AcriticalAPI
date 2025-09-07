@@ -1,15 +1,5 @@
-// import LD from 'lodash';
-// import allBooks from '../DB/dummyData/books';
-// import allReviews from '../DB/dummyData/reviews';
-// const { allUsers } = require('../DB/dummyData/users');
-// import allLists from '../DB/dummyData/lists';
 import Genre = require('../enums/Genre');
 import BookListType = require('../enums/BookListType');
-// import Book = require('../DB/dummyData/books');
-//import User = require('../DB/dummyData/users');
-//import type List = require('../DB/dummyData/lists');
-//import type Review = require('../DB/dummyData/reviews');
-
 import { Types } from 'mongoose'; // needed for ObjectId validation
 import { Book, IBook } from '../DB/models/Book';
 import { User, IUser } from '../DB/models/User';
@@ -66,21 +56,8 @@ const abouts: string[] = [
   "I will work harder", // Animal Farm
 
 
-
-
 ];
 const randomIndex = (N:number)=>Math.floor(Math.random() * N);
-const getMaxIdNumber = (items: { id: string }[]): number => {
-  const numbers = items
-    .map(item => item.id.match(/\d+$/)) // match digits at the end
-    .filter(match => match !== null)
-    .map(match => parseInt(match![0]))
-    .filter(num => !isNaN(num));
-
-  return numbers.length > 0 ? Math.max(...numbers) : 0;
-};
-const generateId = (prefix:string, N:number)=>`${prefix}${N + 1}`;
-
 
 interface BookQueryArgs {
   author?: string;
@@ -529,10 +506,10 @@ export const resolvers = { // make api calls to actua DB here
       await List.deleteMany({ author: user._id });
 
       // Optionally: remove this user from other users' following lists
-      await User.updateMany(
-        { following: user._id },
-        { $pull: { following: user._id } }
-      );
+      // await User.updateMany(
+      //   { following: user._id },
+      //   { $pull: { following: user._id } }
+      // );
 
       await User.deleteOne({ _id: user._id });
       return user;
