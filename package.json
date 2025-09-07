@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "prebuild": "ts-node scripts/generateGenreEnum.ts",
+    "prebuild": "ts-node scripts/generateEnumFiles.ts",
     "build": "tsc",
-    "predev": "ts-node scripts/generateGenreEnum.ts",
+    "predev": "ts-node scripts/generateEnumFiles.ts",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"

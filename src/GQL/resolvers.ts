@@ -1,9 +1,10 @@
-import LD from 'lodash';
-import allBooks from '../DB/dummyData/books';
-import allReviews from '../DB/dummyData/reviews';
-const { allUsers } = require('../DB/dummyData/users');
-import allLists from '../DB/dummyData/lists';
+// import LD from 'lodash';
+// import allBooks from '../DB/dummyData/books';
+// import allReviews from '../DB/dummyData/reviews';
+// const { allUsers } = require('../DB/dummyData/users');
+// import allLists from '../DB/dummyData/lists';
 import Genre = require('../enums/Genre');
+import BookListType = require('../enums/BookListType');
 // import Book = require('../DB/dummyData/books');
 //import User = require('../DB/dummyData/users');
 //import type List = require('../DB/dummyData/lists');
@@ -14,7 +15,6 @@ import { Book, IBook } from '../DB/models/Book';
 import { User, IUser } from '../DB/models/User';
 import { Review, IReview } from '../DB/models/Review';
 import { List, IList } from '../DB/models/List';
-
 
 
 const normalize = (str: string): string =>
@@ -238,297 +238,305 @@ export const resolvers = { // make api calls to actua DB here
 
   //RESOLVE REVIEW DATA
   Review:{
-    author:(review:Review.Review)=>allUsers.find((user:User.User)=>user.id===review.authorId),
-    book:(review:Review.Review)=>allBooks.find((book)=>book.id===review.bookId),
+    author: async (review: IReview) => await User.findById(review.author),
+    book: async (review: IReview) => await Book.findById(review.book)
   },
 
     //RESOLVE LIST DATA
   List:{
-    author:(list:List.List) => allUsers.find((user:User.User)=>user.id===list.authorId),
-    items:(list:List.List) => allBooks.filter((book)=>list.items?.includes(book.id)),
+    author: async (list: IList) => await User.findById(list.author),
+    items: async (list: IList) => await Book.find({ _id: { $in: list.items } })
   },
 
   //RESOLVE BOOK DATA
   Book:{
-    reviews:(book:Book.Book) => allReviews.filter((review)=>review.bookId===book.id),
+    reviews: async(book:IBook) => await Review.find({ book: book._id }),
   },
 
   //RESOLVE USER DATA
   User:{
-    favourites:(user:User.User)=>allBooks.filter((book)=>user.favourites?.includes(book.id)),
-    added:(user:User.User)=>allBooks.filter((book)=>user.added?.includes(book.id)),
-    reviewed:(user:User.User)=>allBooks.filter((book)=>user.reviewed?.includes(book.id)),
-    myReviews:(user:User.User)=>allReviews.filter((review)=>review.authorId===user.id),
-    myLists:(user:User.User)=>allLists.filter((list)=>list.authorId===user.id),
-    following:(user:User.User)=>allUsers.filter((otherUser:User.User)=>user.following?.includes(otherUser.id))
+    favourites: async (user: IUser) => await Book.find({ _id: { $in: user.favourites } }),
+    added: async (user: IUser) => await Book.find({ _id: { $in: user.added } }),
+    reviewed: async (user: IUser) => await Book.find({ _id: { $in: user.reviewed } }),
+    myReviews: async (user: IUser) => await Review.find({ author: user._id }),
+    myLists: async (user: IUser) => await List.find({ author: user._id }),
+    following: async (user: IUser) => await User.find({ _id: { $in: user.following } })
   },
 
 
   Mutation:{
-    addToUserFollowing: (parent: any, args: { input: { id: string; followingId: string } }) => {
+    addToUserFollowing: async (_: any, args: { input: { id: string; followingId: string } }): Promise<IUser | null> => {
       const { id, followingId } = args.input;
-      if(id===followingId){
-        throw new Error("A User can't follow themself");
+      if (id === followingId) throw new Error("A user can't follow themselves.");
+
+      const user = await User.findById(id);
+      const target = await User.findById(followingId);
+      if (!user || !target) throw new Error("User or target user not found.");
+
+      if (!user.following.includes(target._id as Types.ObjectId)) {
+        user.following.push(target._id as Types.ObjectId);
+        await user.save();
       }
-      let updatedUser;
-      allUsers.forEach((user: User.User) => {
-        if (user.id === id) {
-          if (!user.following.includes(followingId)) {
-            user.following.push(followingId);
-          }
-          updatedUser = user;
-        }
-      });
-      return updatedUser;
+
+      return user;
     },
-    removeFromUserFollowing: (parent: any, args: { input: { id: string; followingId: string } }) => {
+    removeFromUserFollowing: async (_: any, args: { input: { id: string; followingId: string } }): Promise<IUser | null> => {
       const { id, followingId } = args.input;
-      let updatedUser;
-      allUsers.forEach((user: User.User) => {
-        if (user.id === id) {
-          user.following = user.following.filter((fid) => fid !== followingId);
-          updatedUser = user;
-        }
-      });
-      return updatedUser;
+      const user = await User.findById(id);
+      if (!user) throw new Error("User not found.");
+    
+      user.following = user.following.filter((fid) => fid.toString() !== followingId);
+      await user.save();
+      return user;
     },
 
 
-    createUserList: (parent:any, args:{input:{userId:string, name:string, visible:boolean}})=>{
-      const {userId, name, visible} = args.input;
-      const newList:List.List = {
-        id: generateId("l",getMaxIdNumber(allLists)),
-        authorId:userId,
+    createUserList: async (_: any, args: { input: { userId: string; name: string; visible: boolean } }): Promise<IList> => {
+      const { userId, name, visible } = args.input;
+
+      const newList = await List.create({
+        author: new Types.ObjectId(userId),
         name,
         visible,
         items: []
-      };
-      console.log(`New list created: ${newList.name} by ${newList.authorId} (${newList.id})`);
-      allLists.push(newList);
+      });
+
+      // Optionally update user's myLists array(CONCLUSION DONT NEED TO MANUALLY ADD AND DELETE USERLISTS SINCE GRAPHQL ALLOWS DYNAMIC RESOLVE OF THIS INFO)
+      // await User.findByIdAndUpdate(userId, {
+      //   $push: { myLists: newList._id }
+      // });
+
       return newList;
     },
-    updateUserList: (parent: any, args: { input: { id: string; name?: string; visible?: boolean } }) => {
+    updateUserList: async (_: any, args: { input: { id: string; name?: string; visible?: boolean } }): Promise<IList | null> => {
       const { id, name, visible } = args.input;
-      let updatedList;
-      allLists.forEach((list: List.List) => {
-        if (list.id === id) {
-          list.name = name || list.name;
-          list.visible = visible===undefined ? list.visible : visible ;
-          updatedList = list;
-        }
-      });
+
+      const updatedList = await List.findByIdAndUpdate(
+        id,
+        {
+          ...(name !== undefined && { name }),
+          ...(visible !== undefined && { visible })
+        },
+        { new: true }
+      );
+
       return updatedList;
     },
-    addBookToUserList: (parent: any, args: { input: { id: string; bookId: string } }) => {
+    addBookToUserList: async (_: any, args: { input: { id: string; bookId: string } }): Promise<IList | null> => {
       const { id, bookId } = args.input;
-      let updatedList;
-      allLists.forEach((list: List.List) => {
-        if (list.id === id) {
-          list.items = LD.union(list.items, [bookId]); // Avoid duplicates
-          updatedList = list;
-        }
-      });
+
+      const updatedList = await List.findByIdAndUpdate(
+        id,
+        {
+          $addToSet: { items: new Types.ObjectId(bookId) } // avoids duplicates
+        },
+        { new: true }
+      );
+
       return updatedList;
     },
-    removeBookFromUserList: (parent: any, args: { input: { id: string; bookId: string } }) => {
+    removeBookFromUserList: async (_: any,  args: { input: { id: string; bookId: string } }): Promise<IList | null> => {
       const { id, bookId } = args.input;
-      let updatedList;
-      allLists.forEach((list: List.List) => {
-        if (list.id === id) {
-          list.items = list.items.filter((aBookId) => aBookId!==bookId);
-          updatedList = list;
-        }
-      });
+
+      const updatedList = await List.findByIdAndUpdate(
+        id,
+        {
+          $pull: { items: new Types.ObjectId(bookId) }
+        },
+        { new: true }
+      );
+
       return updatedList;
     },
-    deleteUserList: (parent: any, args: { id: string }) => {
-      const removed = LD.remove(allLists, (list) => list.id === args.id);
-      return removed[0]; // Return the deleted list
+    deleteUserList: async (_: any,  args: { id: string }): Promise<IList | null> => {
+      const list = await List.findById(args.id);
+      if (!list) return null;
+
+      await List.deleteOne({ _id: args.id });
+
+      // Optionally remove from user's myLists(SAME RESOLVER CONSCLUSION)
+      // await User.findByIdAndUpdate(list.author, {
+      //   $pull: { myLists: list._id }
+      // });
+
+      return list;
     },
 
 
-    createUserReview: (
-      parent: any,
-      args: { input: { userId: string; bookId: string; text: string; rating: number } }
-    ) => {
+    createUserReview: async (_: any, args: { input: { userId: string; bookId: string; text: string; rating: number } }): Promise<IReview> => {
       const { userId, bookId, text, rating } = args.input;
 
       // Check if review already exists
-      const existingReview = allReviews.find(
-        (review) => review.authorId === userId && review.bookId === bookId
-      );
-      if (existingReview) {
-        throw new Error("User has already reviewed this book.");
-      }
+      const existingReview = await Review.findOne({
+        author: userId,
+        book: bookId
+      });
+      if (existingReview) throw new Error("User has already reviewed this book.");
 
-      const newReview: Review.Review = {
-        id: generateId("r", getMaxIdNumber(allReviews)),
-        authorId: userId,
-        bookId,
+      const newReview = await Review.create({
+        author: new Types.ObjectId(userId),
+        book: new Types.ObjectId(bookId),
         text,
-        rating: rating || -1,
-      };
+        rating
+      });
+      // no need to manual update user.reviewed or book.reviews
 
-      allReviews.push(newReview);
-
-      // Add bookId to user's reviewed array if not already present
-      const user = allUsers.find((u:User.User) => u.id === userId);
-      if (user && !user.reviewed.includes(bookId)) {
-        user.reviewed.push(bookId);
-      }
-
-      console.log(`New review added: ${newReview.authorId} for ${newReview.bookId}`);
       return newReview;
     },
-    updateUserReview: (parent:any, args:{input:{id: string, text?:string, rating?:number}})=>{
-      const {id, text, rating} = args.input;
-      let updatedReview;
-      allReviews.forEach((review)=>{
-        if(review.id===id){
-          review.text = text ?? review.text;
-          review.rating = rating ?? review.rating;
-          updatedReview = review;
-        }
-      })
+    updateUserReview: async (_: any, args: { input: { id: string; text?: string; rating?: number } }): Promise<IReview | null> => {
+      const { id, text, rating } = args.input;
+
+      const updatedReview = await Review.findByIdAndUpdate(
+        id,
+        {
+          ...(text !== undefined && { text }),
+          ...(rating !== undefined && { rating })
+        },
+        { new: true }
+      );
+
       return updatedReview;
     },
-    deleteUserReview: (parent: any, args: { id: string }) => {
-      const removed = LD.remove(allReviews, (review) => review.id === args.id);
-      const deletedReview = removed[0];
+    deleteUserReview: async (_: any, args: { id: string }): Promise<IReview | null> => {
+      const review = await Review.findById(args.id);
+      if (!review) return null;
 
-      if (deletedReview) {
-        const user = allUsers.find((u: User.User) => u.id === deletedReview.authorId);
-        if (user) {
-          user.reviewed = user.reviewed.filter((id:string) => id !== deletedReview.bookId);
-        }
-      }
+      await Review.deleteOne({ _id: args.id });
+      // no need to manual update user.reviewed
 
-      return deletedReview;
+      return review;
     },
 
-    createBook: (parent:any, 
-      args:{input:{ author: string, title: string, genre: Genre.Genre, summary: string, date: string, adapted?: boolean}})=>{
-      const {author, title, genre, summary, date, adapted} = args.input;
-      const newBook:Book.Book = {
-        id: generateId("b",getMaxIdNumber(allBooks)),
+    createBook: async (_: any,  args: { input: { author: string; title: string; genre: Genre.Genre, summary: string; date: string; adapted?: boolean } }): Promise<IBook> => {
+      const { author, title, genre, summary, date, adapted } = args.input;
+
+      const newBook = await Book.create({
         author,
         title,
-        aliases: [],
         genre,
-        genres: [],
+        genres: [genre], // You can expand this later
         summary,
-        date,
-        adapted: adapted || false,
-        reviews: [],
-      }
-      console.log(`New book added: ${newBook.title} by ${newBook.author} (${newBook.id})`);
-      allBooks.push(newBook);
+        date: new Date(date),
+        adapted: adapted ?? false,
+        aliases: [],
+        reviews: []
+      });
+
       return newBook;
+    },
+    updateBook: async (_: any,  args: { input: Partial<IBook> & { id: string } }): Promise<IBook | null> => {
+      const { id, ...updates } = args.input;
+
+      if (updates.date) updates.date = new Date(updates.date);
+
+      const updatedBook = await Book.findByIdAndUpdate(id, updates, { new: true });
+      return updatedBook;
+    },
+    deleteBook: async (_: any, args: { id: string }): Promise<IBook | null> => {
+      const book = await Book.findById(args.id);
+      if (!book) return null;
+
+      await Review.deleteMany({ book: book._id }); // clean up reviews
+      await Book.deleteOne({ _id: args.id });
+      return book;
     },
 
 
-    createUser: (parent:any, args:{input:{name:string, about?:string}}) => {
-      const newUser : User.User = {
-        id: generateId("u", getMaxIdNumber(allUsers)),
-        name:args.input.name,
-        about: (args.input.about || abouts[randomIndex(abouts.length)]) as string,
+    createUser: async (_: any,  args: { input: { name: string; about?: string } }): Promise<IUser> => {
+      const { name, about } = args.input;
+
+      const newUser = await User.create({
+        name,
+        about: about ?? abouts[randomIndex(abouts.length)],
+        avatar: '',
         favourites: [],
         added: [],
         reviewed: [],
         myReviews: [],
         myLists: [],
         following: []
+      });
 
-      }
-      console.log(`New user created: ${newUser.name} (${newUser.id})`);
-      allUsers.push(newUser);
       return newUser;
     },
-    updateUserName: (parent:any, args:{input:{id:string, name:string}})=>{
-      let updatedUser;
-      const {id, name} = args.input;
-      allUsers.forEach((user:User.User) => {
-        if(user.id===id){
-           user.name = name;
-           updatedUser = user;
-        }
-      });
-
-      return updatedUser;
+    updateUserName: async (_: any,  args: { input: { id: string; name: string } }): Promise<IUser | null> => {
+      const { id, name } = args.input;
+      return await User.findByIdAndUpdate(id, { name }, { new: true });
     },
-    updateUserAbout: (parent:any, args:{input:{id:string, about:string}})=>{
-      let updatedUser;
-      const {id, about} = args.input;
-      allUsers.forEach((user:User.User) => {
-        if(user.id===id){
-           user.about = about;
-           updatedUser = user;
-        }
-      });
-
-      return updatedUser;
+    updateUserAbout: async (_: any, args: { input: { id: string; about: string } }): Promise<IUser | null> => {
+      const { id, about } = args.input;
+      return await User.findByIdAndUpdate(id, { about }, { new: true });
     },
-    updateUserAvatar: async (_: any, { id, avatarUrl }: { id: string; avatarUrl: string }) => {
-      try {
-        let user;
-        allUsers.forEach((user:User.User)=>{
-          if(user.id===id){
-            user.avatar = avatarUrl;
-          }
-        });
-        //const user = await User.findByIdAndUpdate(id, { avatar: avatarUrl }, { new: true });
-        return user;
-      } catch (err) {
-        console.error(err);
-        throw new Error('Failed to update avatar');
+    updateUserAvatar: async (_: any,  args: { id: string; avatarUrl: string }): Promise<IUser | null> => await User.findByIdAndUpdate(args.id, { avatar: args.avatarUrl }, { new: true }),
+    addBookToUser: async (_: any, args: { input: { userId: string; bookId: string; dest: BookListType.BookListType } }): Promise<IBook | null> => {
+      const { userId, bookId, dest } = args.input;
+
+      const user = await User.findById(userId);
+      if (!user) throw new Error("User not found");
+
+      const book = await Book.findById(bookId);
+      if (!book) throw new Error("Book not found");
+
+      switch (dest) {
+        case "FAVOURITE":
+          if (!user.favourites.includes(book._id as Types.ObjectId)) user.favourites.push(book._id as Types.ObjectId);
+          break;
+        case "ADDED":
+          if (!user.added.includes(book._id as Types.ObjectId)) user.added.push(book._id as Types.ObjectId);
+          break;
+        case "REVIEWED":
+          throw new Error("Use createUserReview to mark a book as reviewed.");
+        default:
+          throw new Error("Invalid destination");
       }
-    },
-    addBookToUser: (parent:any, args:{input:{userId:string, bookId:string, dest:string}})=>{
-      const {userId, bookId, dest} = args.input;
-      allUsers.forEach((user:User.User)=>{
-        if(user.id===userId){
-          switch (dest) {
-            case "FAVOURITE":
-              user.favourites.push(bookId);
-              break;
-            case "ADDED":
-              user.added.push(bookId);
-              break;
-            case "REVIEWED":
-              throw new Error("Use createUserReview to mark a book as reviewed.");
-            default:
-              throw new Error("Invalid destination");
-          }
-        }
-      });
 
-      console.log(`book added to ${dest}: ${userId} (${bookId})`);
-      return allBooks.find((book) => book.id === bookId);
+      await user.save();
+      return book;
     },
-    removeBookFromUser: (parent:any, args:{input:{userId:string, bookId:string, dest:string}})=>{
-      const {userId, bookId, dest} = args.input;
-      allUsers.forEach((user:User.User)=>{
-        if(user.id===userId){
-          switch (dest) {
-            case "FAVOURITE":
-              user.favourites = user.favourites.filter((book)=>book!==bookId);
-              break;
-            case "ADDED":
-              user.added = user.added.filter((book)=>book!==bookId);
-              break;
-            case "REVIEWED":
-              throw new Error("Use deleteUserReview to remove user review.");
-            default:
-              throw new Error("Invalid destination");
-          }
-        }
-      });
+    removeBookFromUser: async (_: any, args: { input: { userId: string; bookId: string; dest: BookListType.BookListType } }): Promise<IBook | null> => {
+      const { userId, bookId, dest } = args.input;
 
-      console.log(`book removed from ${dest}: ${userId} (${bookId})`);
-      return allBooks.find((book) => book.id === bookId);
+      const user = await User.findById(userId);
+      if (!user) throw new Error("User not found");
+
+      const book = await Book.findById(bookId);
+      if (!book) throw new Error("Book not found");
+
+      switch (dest) {
+        case "FAVOURITE":
+          user.favourites = user.favourites.filter(id => id.toString() !== bookId);
+          break;
+        case "ADDED":
+          user.added = user.added.filter(id => id.toString() !== bookId);
+          break;
+        case "REVIEWED":
+          throw new Error("Use deleteUserReview to remove user review.");
+        default:
+          throw new Error("Invalid destination");
+      }
+
+      await user.save();
+      return book;
     },
-    deleteUser:(parent:any, args:{id:string}) => LD.remove(allUsers,(user)=>user.id===args.id)[0],
-    deleteBook:(parent:any, args:{id:string}) => LD.remove(allBooks,(book)=>book.id===args.id)[0],
+    deleteUser: async (_: any, args: { id: string }): Promise<IUser | null> => {
+      const user = await User.findById(args.id);
+      if (!user) return null;
+
+      // Delete user's reviews
+      await Review.deleteMany({ author: user._id });
+
+      // Delete user's lists
+      await List.deleteMany({ author: user._id });
+
+      // Optionally: remove this user from other users' following lists
+      await User.updateMany(
+        { following: user._id },
+        { $pull: { following: user._id } }
+      );
+
+      await User.deleteOne({ _id: user._id });
+      return user;
+    },
 
   }
 };

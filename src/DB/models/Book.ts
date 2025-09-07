@@ -71,6 +71,6 @@ BookSchema.index({ genre: 1 });
 // Optional text index for fuzzy search
 BookSchema.index({ title: 'text', summary: 'text' });
 
-const BookModel = mongoose.model<IBook>('Book', BookSchema);
+const Book = mongoose.model<IBook>('Book', BookSchema);
 export { Book, IBook }; // 👈 this
 

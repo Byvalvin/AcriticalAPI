@@ -91,6 +91,18 @@ export const typeDefs = gql`
     date: String!
     adapted: Boolean
   }
+  input UpdateBookInput {
+    id: ID!
+    title: String
+    author: String
+    genre: Genre
+    genres: [Genre!]
+    summary: String
+    date: String
+    cover: String
+    adapted: Boolean
+    aliases: [String!]
+  }
   input CreateUserInput{
     name: String!
     about: String
@@ -134,6 +146,8 @@ export const typeDefs = gql`
   
   type Mutation{
     createBook(input: CreateBookInput!): Book!
+    updateBook(input: UpdateBookInput!): Book
+    deleteBook(id: ID!): Book
 
     
     createUser(input: CreateUserInput!): User!
