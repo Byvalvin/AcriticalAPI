@@ -159,12 +159,12 @@ export const typeDefs = gql`
     removeBookFromUser(input: UserBookInput!): Book
 
 
-    createUserReview(input: CreateReviewInput!): Review # createReview
+    createUserReview(input: CreateReviewInput!): Review! # createReview
     updateUserReview(input: UpdateUserReviewInput!): Review
     deleteUserReview(id: ID!): Review
 
 
-    createUserList(input: CreateListInput!): List # createList
+    createUserList(input: CreateListInput!): List! # createList
     updateUserList(input: UpdateUserListInput!): List
     deleteUserList(id: ID!): List
     addBookToUserList(input: UserListInput!): List
